@@ -4,11 +4,11 @@
 
 | Team Member        | Responsibilities                                                                 |
 |-------------------|----------------------------------------------------------------------------------|
-| Avi       |  Metadata & Text Content extraction                    |
-| Caleb    | Aggregation Layer: Relevant Content Extraction + Geoclip Image Grid Patching |
-| Nahom  |  Metadata & Text Content extraction + Aggregation Layer Assistance|
-| Rishi   | Frontend + PDF Report generation |
-| Zyad    | Conclusion Layer / Final Report information |
+| Rishi Chudasama   | Frontend + PDF Report generation |
+| Caleb Holland    | Aggregation Layer: Relevant Content Extraction + Geoclip Image Grid Patching |
+| Zyad Khan    | Conclusion Layer / Final Report information |
+| Nahom Wondimu  |  Metadata & Text Content extraction + Aggregation Layer Assistance |
+| Avi Yadava     |  Metadata & Text Content extraction                    |
 
 
 ## Motivation:
