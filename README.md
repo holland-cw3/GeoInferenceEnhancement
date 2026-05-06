@@ -1,5 +1,16 @@
 # GeoInferenceEnhancement
 
+## Team
+
+| Team Member        | Responsibilities                                                                 |
+|-------------------|----------------------------------------------------------------------------------|
+| Avi       |  Metadata & Text Content extraction                    |
+| Caleb    | Aggregation Layer: Relevant Content Extraction + Geoclip Image Grid Patching |
+| Nahom  |  Metadata & Text Content extraction + Aggregation Layer Assistance|
+| Rishi   | Frontend + PDF Report generation |
+| Zyad    | Conclusion Layer / Final Report information |
+
+
 ## Motivation:
 
 Image metadata and geolocation extraction are a major part of OSINT investigations. As we learned in class, exiftool can be used to extract metadata, including the author, GPS coordinates, device info, and more. Metadata, however, can be edited and removed, making the integrity of images malleable. In the ideal world, every image would contain accurate geolocation data, or any data at all, for that matter. But this isn’t the case.
