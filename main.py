@@ -5,41 +5,74 @@
 # which lists best geo-guess, key people
 
 import streamlit as st
+from urllib.parse import urlparse
+import time
 from AggregrationLayer import AggregationLayer
 from ExtractionLayer import ExtractionLayer
 from ConclusionLayer import ConclusionLayer
 from dotenv import load_dotenv
 
+
 # --------------- Initialization ----------------
 load_dotenv()
 
-extraction_layer = ExtractionLayer(url="")
-aggregation_layer = AggregationLayer()
-conclusion_layer = ConclusionLayer()
-
+# Keep these visible as pipeline scaffolding for each layer owner.
+extraction_layer = None
+aggregation_layer = None
+conclusion_layer = None
 # ===============================================
 
-
-# -------------- Extraction Logic ---------------
-# TODO: Put whatever the execution logic is for this here
-# ===============================================
-
-
-# -------------- Aggregation Logic ---------------
-relevant_content = aggregation_layer.extract_relevant_page_content(page_content="")
-gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path="")
-
-print(gps_coordinate_guesses)
-# ===============================================
+def is_valid_url(url: str) -> bool:
+    """
+    Basic URL validation for frontend input.
+    """
+    try:
+        parsed = urlparse(url.strip())
+        return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+    except ValueError:
+        return False
 
 
-# -------------- Conclusion Logic ---------------
-# TODO: Put whatever the conclusion logic is for this here
-# ===============================================
+st.set_page_config(page_title="GeoInference Enhancement Pipeline", layout="wide")
+st.title("GeoInference Enhancement Pipeline")
+st.write("Enter a webpage URL to begin geolocation analysis.")
+
+default_url = st.session_state.get("input_url", "")
+input_url = st.text_input("Website URL", value=default_url, placeholder="https://example.com/article")
+analyze_clicked = st.button("Analyze", type="primary")
+
+if analyze_clicked:
+    if not input_url.strip():
+        st.error("Please enter a URL before running analysis.")
+    elif not is_valid_url(input_url):
+        st.error("Please enter a valid URL that starts with http:// or https://.")
+    else:
+        st.session_state["input_url"] = input_url.strip()
+
+        with st.spinner("Analyzing input..."):
+            time.sleep(1.2)
+
+        # -------------- Extraction Logic ---------------
+        # For now, only pass URL into ExtractionLayer.
+        extraction_layer = ExtractionLayer(url=input_url.strip())
+        # TODO: extraction_results = extraction_layer.run()
+        # ===============================================
 
 
-# run with steamlit run main.py
+        # -------------- Aggregation Logic ---------------
+        # TODO: aggregation_layer = AggregationLayer()
+        # TODO: relevant_content = aggregation_layer.extract_relevant_page_content(page_content=...)
+        # TODO: gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path=...)
+        # ===============================================
 
-# st.set_page_config(layout="wide")
 
-# st.title("GeoInference Enhancement Pipeline")
+        # -------------- Conclusion Logic ---------------
+        # TODO: conclusion_layer = ConclusionLayer()
+        # TODO: final_report = conclusion_layer.generate_report(...)
+        # ===============================================
+
+        st.success("Input captured and passed to ExtractionLayer.")
+        st.caption(f"ExtractionLayer initialized with URL: {extraction_layer.url}")
+        st.info(
+            "Pipeline execution is scaffolded only. Extraction/Aggregation/Conclusion methods are pending wiring."
+        )
