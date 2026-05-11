@@ -69,6 +69,48 @@ if analyze_clicked:
         # -------------- Conclusion Logic ---------------
         # TODO: conclusion_layer = ConclusionLayer()
         # TODO: final_report = conclusion_layer.generate_report(...)
+        conclusion_layer = ConclusionLayer()
+ 
+        final_report = conclusion_layer.generate_report(
+        relevant_content=relevant_content,       # str  — from aggregation_layer.extract_relevant_page_content()
+        gps_guesses=gps_coordinate_guesses,      # dict — from aggregation_layer.infer_geolocation()
+        metadata=extraction_results["metadata"], # dict — from extraction_layer.run(), may be {}
+        image_path=extraction_results["image_path"],  # str — saved image path
+        )
+        
+        # What final_report looks like (pass these pieces to Rishi for the PDF/UI)
+        # -----------------------------------------------------------------------
+        #
+        # final_report = {
+        #
+        #   "location_guesses": [
+        #       {
+        #           "rank": 1,
+        #           "location_name": "Rome, Lazio, Italy",
+        #           "coordinates": [41.9028, 12.4964],
+        #           "confidence": 0.87,
+        #           "reasoning": "Colosseum visible in background; Italian text in site content; ..."
+        #       },
+        #       { "rank": 2, ... },
+        #       ...
+        #   ],
+        #
+        #   "conflict_analysis": "EXIF GPS points to Vatican City (41.9022, 12.4539), 
+        #                          which is ~4 km from GeoClip's top guess of central Rome. 
+        #                          This is a minor conflict — both suggest the same metro area.",
+        #
+        #   "key_information": {
+        #       "best_guess": "Rome, Italy",
+        #       "key_people":  ["Pope Francis"],
+        #       "key_places":  ["Colosseum", "Vatican City", "Piazza Venezia"],
+        #       "key_events":  ["Easter Mass 2024"],
+        #       "confidence_summary": "High confidence (~87%) — image content, metadata, 
+        #                              and GeoClip all converge on central Rome."
+        #   },
+        #
+        #   "full_report": "The image depicts ... [2-4 paragraph prose for the PDF]"
+        # }
+        
         # ===============================================
 
         st.success("Input captured and passed to ExtractionLayer.")
