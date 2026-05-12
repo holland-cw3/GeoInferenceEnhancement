@@ -202,4 +202,4 @@ class ConclusionLayer:
                 "full_report": raw,
                 "_parse_error": str(e),
             }
- return report
+        return report

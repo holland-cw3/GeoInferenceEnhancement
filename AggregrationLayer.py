@@ -174,3 +174,8 @@ class AggregationLayer:
             
         return guesses
 
+
+
+aggregation_layer = AggregationLayer()
+gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path="./images/i2.jpg")
+print(gps_coordinate_guesses)
