@@ -62,7 +62,7 @@ if analyze_clicked:
         # -------------- Aggregation Logic ---------------
         # TODO: aggregation_layer = AggregationLayer()
         # TODO: relevant_content = aggregation_layer.extract_relevant_page_content(page_content=...)
-        # TODO: gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path=...)
+        # TODO: gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path=...) # for single image, will need to loop if multiple images exist
         # ===============================================
 
 
