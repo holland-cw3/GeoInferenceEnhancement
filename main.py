@@ -6,26 +6,20 @@
 
 import streamlit as st
 from urllib.parse import urlparse
-import time
-from AggregrationLayer import AggregationLayer
 from ExtractionLayer import ExtractionLayer
 from ConclusionLayer import ConclusionLayer
 from dotenv import load_dotenv
+import pandas as pd
+
+from pdf_report import build_report_pdf
 
 
 # --------------- Initialization ----------------
 load_dotenv()
-
-# Keep these visible as pipeline scaffolding for each layer owner.
-extraction_layer = None
-aggregation_layer = None
-conclusion_layer = None
 # ===============================================
 
+
 def is_valid_url(url: str) -> bool:
-    """
-    Basic URL validation for frontend input.
-    """
     try:
         parsed = urlparse(url.strip())
         return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
@@ -49,72 +43,113 @@ if analyze_clicked:
     else:
         st.session_state["input_url"] = input_url.strip()
 
-        with st.spinner("Analyzing input..."):
-            time.sleep(1.2)
+        with st.spinner("Running..."):
+            # -------------- Extraction Logic ---------------
+            extraction_results = ExtractionLayer(url=input_url.strip()).run()
 
-        # -------------- Extraction Logic ---------------
-        # For now, only pass URL into ExtractionLayer.
-        extraction_layer = ExtractionLayer(url=input_url.strip())
-        # TODO: extraction_results = extraction_layer.run()
-        # ===============================================
+            if not extraction_results["image_path"]:
+                st.error("No image found on page.")
+                st.stop()
+            # ===============================================
+
+            # -------------- Aggregation Logic ---------------
+            from AggregrationLayer import AggregationLayer
+
+            aggregation_layer = AggregationLayer()
+            relevant_content = aggregation_layer.extract_relevant_page_content(
+                page_content=extraction_results["page_content"]
+            )
+            gps_coordinate_guesses = aggregation_layer.infer_geolocation(
+                image_path=extraction_results["image_path"]
+            )
+            # ===============================================
+
+            # -------------- Conclusion Logic ---------------
+            conclusion_layer = ConclusionLayer()
+            final_report = conclusion_layer.generate_report(
+                relevant_content=relevant_content,
+                gps_guesses=gps_coordinate_guesses,
+                metadata=extraction_results["metadata"],
+                image_path=extraction_results["image_path"],
+            )
+
+            # What final_report looks like (pass these pieces for the PDF/UI)
+            # -----------------------------------------------------------------------
+            #
+            # final_report = {
+            #
+            #   "location_guesses": [
+            #       {
+            #           "rank": 1,
+            #           "location_name": "Rome, Lazio, Italy",
+            #           "coordinates": [41.9028, 12.4964],
+            #           "confidence": 0.87,
+            #           "reasoning": "Colosseum visible in background; Italian text in site content; ..."
+            #       },
+            #       { "rank": 2, ... },
+            #       ...
+            #   ],
+            #
+            #   "conflict_analysis": "EXIF GPS points to Vatican City (41.9022, 12.4539), 
+            #                          which is ~4 km from GeoClip's top guess of central Rome. 
+            #                          This is a minor conflict — both suggest the same metro area.",
+            #
+            #   "key_information": {
+            #       "best_guess": "Rome, Italy",
+            #       "key_people":  ["Pope Francis"],
+            #       "key_places":  ["Colosseum", "Vatican City", "Piazza Venezia"],
+            #       "key_events":  ["Easter Mass 2024"],
+            #       "confidence_summary": "High confidence (~87%) — image content, metadata, 
+            #                              and GeoClip all converge on central Rome."
+            #   },
+            #
+            #   "full_report": "The image depicts ... [2-4 paragraph prose for the PDF]"
+            # }
+            # ===============================================
+
+        st.session_state["final_report"] = final_report
+        st.session_state["image_path"] = extraction_results["image_path"]
 
 
-        # -------------- Aggregation Logic ---------------
-        # TODO: aggregation_layer = AggregationLayer()
-        # TODO: relevant_content = aggregation_layer.extract_relevant_page_content(page_content=...)
-        # TODO: gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path=...) # for single image, will need to loop if multiple images exist
-        # ===============================================
+if "final_report" in st.session_state:
+    report = st.session_state["final_report"]
 
+    st.image(st.session_state["image_path"])
 
-        # -------------- Conclusion Logic ---------------
-        # TODO: conclusion_layer = ConclusionLayer()
-        # TODO: final_report = conclusion_layer.generate_report(...)
-        conclusion_layer = ConclusionLayer()
- 
-        final_report = conclusion_layer.generate_report(
-        relevant_content=relevant_content,       # str  — from aggregation_layer.extract_relevant_page_content()
-        gps_guesses=gps_coordinate_guesses,      # dict — from aggregation_layer.infer_geolocation()
-        metadata=extraction_results["metadata"], # dict — from extraction_layer.run(), may be {}
-        image_path=extraction_results["image_path"],  # str — saved image path
-        )
-        
-        # What final_report looks like (pass these pieces to Rishi for the PDF/UI)
-        # -----------------------------------------------------------------------
-        #
-        # final_report = {
-        #
-        #   "location_guesses": [
-        #       {
-        #           "rank": 1,
-        #           "location_name": "Rome, Lazio, Italy",
-        #           "coordinates": [41.9028, 12.4964],
-        #           "confidence": 0.87,
-        #           "reasoning": "Colosseum visible in background; Italian text in site content; ..."
-        #       },
-        #       { "rank": 2, ... },
-        #       ...
-        #   ],
-        #
-        #   "conflict_analysis": "EXIF GPS points to Vatican City (41.9022, 12.4539), 
-        #                          which is ~4 km from GeoClip's top guess of central Rome. 
-        #                          This is a minor conflict — both suggest the same metro area.",
-        #
-        #   "key_information": {
-        #       "best_guess": "Rome, Italy",
-        #       "key_people":  ["Pope Francis"],
-        #       "key_places":  ["Colosseum", "Vatican City", "Piazza Venezia"],
-        #       "key_events":  ["Easter Mass 2024"],
-        #       "confidence_summary": "High confidence (~87%) — image content, metadata, 
-        #                              and GeoClip all converge on central Rome."
-        #   },
-        #
-        #   "full_report": "The image depicts ... [2-4 paragraph prose for the PDF]"
-        # }
-        
-        # ===============================================
+    st.subheader("Best Guess")
+    st.write(report["key_information"]["best_guess"])
+    st.write(report["key_information"]["confidence_summary"])
 
-        st.success("Input captured and passed to ExtractionLayer.")
-        st.caption(f"ExtractionLayer initialized with URL: {extraction_layer.url}")
-        st.info(
-            "Pipeline execution is scaffolded only. Extraction/Aggregation/Conclusion methods are pending wiring."
-        )
+    st.subheader("Location Guesses")
+    guess_rows = []
+    map_rows = []
+    for guess in report["location_guesses"]:
+        lat, lon = guess["coordinates"][0], guess["coordinates"][1]
+        guess_rows.append({
+            "rank": guess["rank"],
+            "location": guess["location_name"],
+            "lat": lat,
+            "lon": lon,
+            "confidence": guess["confidence"],
+        })
+        map_rows.append({"lat": lat, "lon": lon})
+    st.dataframe(guess_rows)
+    st.map(pd.DataFrame(map_rows))
+
+    st.subheader("Conflict Analysis")
+    st.write(report["conflict_analysis"])
+
+    st.subheader("Full Report")
+    st.write(report["full_report"])
+
+    pdf_bytes = build_report_pdf(
+        report,
+        st.session_state.get("input_url", ""),
+        st.session_state.get("image_path"),
+    )
+    st.download_button(
+        label="Download PDF Report",
+        data=pdf_bytes,
+        file_name="geoinference_report.pdf",
+        mime="application/pdf",
+    )

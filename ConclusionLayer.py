@@ -28,7 +28,7 @@ class ConclusionLayer:
         load_dotenv()
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
         self.client = genai.Client(api_key=GEMINI_API_KEY)
-        self.model = "gemini-2.0-flash"
+        self.model = "gemini-2.5-flash"
  
     # Internal helpers 
     def _encode_image(self, image_path: str) -> tuple[str, str]:

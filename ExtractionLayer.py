@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import mimetypes
 import os
 import re
@@ -8,6 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
+import PIL.Image
 import requests
 from bs4 import BeautifulSoup
 from exif import Image
@@ -143,7 +145,7 @@ class ExtractionLayer:
                         alt_text=candidate["alt_text"],
                     )
                 )
-            except requests.RequestException as exc:
+            except (requests.RequestException, ValueError) as exc:
                 errors.append(f"Could not download image {image_url}: {exc}")
 
         return self._build_results(
@@ -257,6 +259,18 @@ class ExtractionLayer:
 
         return self._normalize_whitespace(" ".join(text_parts))[:1500]
 
+    def _is_valid_image_bytes(self, data: bytes) -> bool:
+        stripped = data.lstrip()
+        if stripped.startswith(b"<") or stripped.lower().startswith(b"<!doctype"):
+            return False
+
+        try:
+            with PIL.Image.open(io.BytesIO(data)) as img:
+                img.verify()
+            return True
+        except Exception:
+            return False
+
     def _save_image_response(
         self,
         response: requests.Response,
@@ -264,6 +278,10 @@ class ExtractionLayer:
         surrounding_text: str,
         alt_text: str,
     ) -> dict[str, Any]:
+        content = response.content
+        if not self._is_valid_image_bytes(content):
+            raise ValueError("Downloaded file is not a valid image (got HTML or corrupt data).")
+
         content_type = response.headers.get("Content-Type", "").split(";")[0].lower()
         extension = self._image_extension(source_url, content_type)
         digest = hashlib.sha256(source_url.encode("utf-8")).hexdigest()[:16]
@@ -271,9 +289,7 @@ class ExtractionLayer:
 
         self.image_dir.mkdir(parents=True, exist_ok=True)
         with open(path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
+            f.write(content)
 
         metadata = self._extract_metadata(path)
         return {

@@ -10,6 +10,7 @@ from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
 from geoclip import GeoCLIP
 from google import genai
+from google.genai import types
 import PIL.Image
 import tempfile
 import torch
@@ -82,7 +83,7 @@ class AggregationLayer:
         response = self.client.models.generate_content(
             model=model,
             contents=[prompt],
-            temperature=0
+            config=types.GenerateContentConfig(temperature=0),
         )
 
         return response.text
@@ -175,7 +176,3 @@ class AggregationLayer:
         return guesses
 
 
-
-aggregation_layer = AggregationLayer()
-gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path="./images/i2.jpg")
-print(gps_coordinate_guesses)
