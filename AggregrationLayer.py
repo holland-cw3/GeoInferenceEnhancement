@@ -10,6 +10,7 @@ from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
 from geoclip import GeoCLIP
 from google import genai
+from google.genai import types
 import PIL.Image
 import tempfile
 import torch
@@ -26,8 +27,8 @@ class AggregationLayer:
 
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
         HF_TOKEN = os.getenv("HF_TOKEN")
-
-        os.environ["HF_TOKEN"] = HF_TOKEN # set HF token for huggingface downloads
+        if HF_TOKEN:
+            os.environ["HF_TOKEN"] = HF_TOKEN # set HF token for huggingface downloads
 
         self.client = genai.Client(api_key=GEMINI_API_KEY)
         self.geoClipModel = GeoCLIP()
@@ -82,7 +83,7 @@ class AggregationLayer:
         response = self.client.models.generate_content(
             model=model,
             contents=[prompt],
-            temperature=0
+            config=types.GenerateContentConfig(temperature=0),
         )
 
         return response.text
@@ -175,7 +176,8 @@ class AggregationLayer:
         return guesses
 
 
+if __name__ == "__main__":
+    aggregation_layer = AggregationLayer()
+    gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path="./images/i2.jpg")
+    print(gps_coordinate_guesses)
 
-aggregation_layer = AggregationLayer()
-gps_coordinate_guesses = aggregation_layer.infer_geolocation(image_path="./images/i2.jpg")
-print(gps_coordinate_guesses)
